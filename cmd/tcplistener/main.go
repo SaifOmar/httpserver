@@ -20,12 +20,21 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		fmt.Printf("Incoming connection to the listner: %v", conn)
 		request, err := request.RequestFromReader(conn)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("Method: %s, RequestTarget: %s, HTTP Version: %s\n", request.RequestLine.Method, request.RequestLine.RequestTarget, request.RequestLine.HttpVersion)
+		fmt.Printf("Request line:\n")
+		fmt.Printf("- Method: %s\n", request.RequestLine.Method)
+		fmt.Printf("- Target: %s\n", request.RequestLine.RequestTarget)
+		fmt.Printf("- Version: %s\n", request.RequestLine.HttpVersion)
+		fmt.Println("Headers:")
+
+		for key, value := range request.Headers {
+			fmt.Printf("- %s: %s\n", key, value)
+		}
 		conn.Close()
 		fmt.Println("Connection has been closed")
 

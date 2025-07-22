@@ -3,6 +3,7 @@ package request
 import (
 	"bytes"
 	"fmt"
+	"httpserver/internal/headers"
 	"io"
 	"strings"
 	"unicode"
@@ -11,18 +12,21 @@ import (
 type parserState string
 
 const (
-	StateInit parserState = "init"
-	StateDone parserState = "done"
+	StateInit         parserState = "init"
+	StateDone         parserState = "done"
+	StateParseHeaders parserState = "parsing_headers"
 )
 
 type Request struct {
 	RequestLine RequestLine
+	Headers     headers.Headers
 	state       parserState
 }
 
 func NewRequest() *Request {
 	return &Request{
-		state: StateInit,
+		state:   StateInit,
+		Headers: headers.NewHeaders(),
 	}
 
 }
@@ -47,16 +51,15 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Error reading from io.Reader: %s", err)
 		}
+
 		buffIndex += readN
 		parseN, err := r.parse(buff[:buffIndex])
 		if err != nil {
 			return nil, fmt.Errorf("Error parsing: %s", err)
 		}
-		fmt.Printf("BUFFER: %q\n", buff[:buffIndex])
-		fmt.Printf("PARSED: %d\n", parseN)
-		// note here parseN might be 0 or the index of the start to retry the parsing
 		copy(buff, buff[parseN:buffIndex])
 		buffIndex -= parseN
+
 	}
 	// note here parseN might be 0 or the index of the start to retry the parsing
 	return r, nil
@@ -77,9 +80,24 @@ outer:
 			}
 
 			r.RequestLine = *line
-			fmt.Printf("line: %s\n", r.RequestLine)
+			// fmt.Printf("line: %s\n", r.RequestLine)
 			read += n
-			r.state = StateDone
+			r.state = StateParseHeaders
+			return read, nil
+
+		}
+
+		if r.state == StateParseHeaders {
+			fmt.Printf("Data: %q\n", data[read:])
+			n, done, err := r.Headers.Parse(data[read:])
+			if err != nil {
+				return 0, err
+			}
+			read += n
+			if done {
+				r.state = StateDone
+				return read, nil
+			}
 			return read, nil
 
 		}
