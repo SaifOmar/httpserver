@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"httpserver/internal/request"
 	"io"
 	"log"
 	"net"
@@ -20,10 +21,11 @@ func main() {
 			log.Fatal(err)
 		}
 		fmt.Printf("Incoming connection to the listner: %v", conn)
-		lines := getLinesChannel(conn)
-		for line := range lines {
-			fmt.Println(line)
+		request, err := request.RequestFromReader(conn)
+		if err != nil {
+			log.Fatal(err)
 		}
+		fmt.Printf("Method: %s, RequestTarget: %s, HTTP Version: %s\n", request.RequestLine.Method, request.RequestLine.RequestTarget, request.RequestLine.HttpVersion)
 		conn.Close()
 		fmt.Println("Connection has been closed")
 
