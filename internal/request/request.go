@@ -46,9 +46,18 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 	r := NewRequest()
 	buff := make([]byte, 1024)
 	buffIndex := 0
-	for r.state != StateDone {
+	for {
 		readN, err := reader.Read(buff[buffIndex:])
+		// fmt.Printf("readN: %d, err: %s\n", readN, err)
 		if err != nil {
+			if err == io.EOF {
+				r.state = StateDone
+				fmt.Println("We hit the end of the reader")
+				for k, v := range r.Headers {
+					fmt.Printf("k: %s, v: %s\n", k, v)
+				}
+				break
+			}
 			return nil, fmt.Errorf("Error reading from io.Reader: %s", err)
 		}
 
@@ -57,9 +66,13 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Error parsing: %s", err)
 		}
+
 		copy(buff, buff[parseN:buffIndex])
 		buffIndex -= parseN
 
+		if r.state == StateDone {
+			break
+		}
 	}
 	// note here parseN might be 0 or the index of the start to retry the parsing
 	return r, nil
@@ -88,18 +101,28 @@ outer:
 		}
 
 		if r.state == StateParseHeaders {
-			fmt.Printf("Data: %q\n", data[read:])
-			n, done, err := r.Headers.Parse(data[read:])
-			if err != nil {
-				return 0, err
+			done := false
+			for !done {
+				// fmt.Printf("Data: %q\n", data[read:])
+				n, newDone, err := r.Headers.Parse(data[read:])
+				fmt.Println("We are parsing the headers")
+
+				if err != nil {
+					return 0, err
+				}
+				read += n
+				done = newDone
+				if !done {
+					// not enough data — wait for more
+					// this assumes you're in a larger loop collecting data
+					break
+				}
 			}
-			read += n
 			if done {
 				r.state = StateDone
-				return read, nil
+				break outer
 			}
 			return read, nil
-
 		}
 		if r.state == StateDone {
 			break outer
