@@ -1,3 +1,246 @@
 ### 
 
-GET http://localhost:42069/use-neovim-btw HTTP/1.1
+POST http://localhost:42069/use-neovim-btw HTTP/1.1
+
+{
+  "feature_flags": {
+    "beta_editor": false,
+    "http3_support": true,
+    "new_dashboard": true,
+    "realtime_presence": true
+  },
+  "id": "usr_84f2c91a",
+  "logs": [
+    {
+      "level": "INFO",
+      "message": "Server started successfully",
+      "timestamp": "2026-05-23T10:00:00Z"
+    },
+    {
+      "level": "WARN",
+      "message": "Slow query detected",
+      "timestamp": "2026-05-23T10:03:11Z"
+    },
+    {
+      "level": "ERROR",
+      "message": "Failed to connect to replica database",
+      "timestamp": "2026-05-23T10:05:45Z"
+    }
+  ],
+  "metrics": {
+    "cpu": {
+      "cores": 12,
+      "temperature_c": 63,
+      "usage_percent": 74.2
+    },
+    "memory": {
+      "free_mb": 14347,
+      "total_mb": 32768,
+      "used_mb": 18421
+    },
+    "network": {
+      "download_mbps": 412.55,
+      "packets_received": 12391823,
+      "packets_sent": 9182731,
+      "upload_mbps": 88.14
+    }
+  },
+  "permissions": {
+    "admin": true,
+    "allowed_routes": [
+      "/api/users",
+      "/api/projects",
+      "/api/servers",
+      "/api/admin/logs"
+    ],
+    "can_ban_users": true,
+    "can_delete": false
+  },
+  "profile": {
+    "age": 27,
+    "bio": "Building networking tools, editors, game engines, and distributed systems.",
+    "created_at": "2026-05-23T15:20:11Z",
+    "email": "saif@example.com",
+    "first_name": "Saif",
+    "last_login": "2026-05-23T16:40:55Z",
+    "last_name": "Omar",
+    "location": {
+      "city": "Alexandria",
+      "coordinates": {
+        "lat": 31.2001,
+        "lng": 29.9187
+      },
+      "country": "Egypt"
+    },
+    "socials": {
+      "github": "https://github.com/saifdev",
+      "twitter": "https://x.com/saifdev",
+      "website": "https://saif.dev"
+    },
+    "username": "saif_dev",
+    "verified": true
+  },
+  "projects": [
+    {
+      "contributors": [
+        {
+          "id": 1,
+          "name": "Ahmed",
+          "role": "backend"
+        },
+        {
+          "id": 2,
+          "name": "Nour",
+          "role": "frontend"
+        }
+      ],
+      "id": "proj_001",
+      "name": "Local Pulse",
+      "stats": {
+        "closed_issues": 201,
+        "commits": 1240,
+        "open_issues": 13,
+        "stars": 91
+      },
+      "status": "active",
+      "tags": [
+        "golang",
+        "websocket",
+        "social-media",
+        "queues"
+      ]
+    },
+    {
+      "contributors": [],
+      "id": "proj_002",
+      "name": "DistributedFS",
+      "stats": {
+        "closed_issues": 4,
+        "commits": 87,
+        "open_issues": 21,
+        "stars": 3
+      },
+      "status": "experimental",
+      "tags": [
+        "filesystem",
+        "distributed-systems",
+        "raft",
+        "storage"
+      ]
+    },
+    {
+      "contributors": [
+        {
+          "id": 5,
+          "name": "Layla",
+          "role": "designer"
+        }
+      ],
+      "id": "proj_003",
+      "name": "MarkdownLive",
+      "stats": {
+        "closed_issues": 74,
+        "commits": 530,
+        "open_issues": 8,
+        "stars": 48
+      },
+      "status": "paused",
+      "tags": [
+        "typescript",
+        "socketio",
+        "sqlite",
+        "crdt"
+      ]
+    }
+  ],
+  "random_data": [
+    {
+      "key": "a1",
+      "value": 918273
+    },
+    {
+      "key": "b2",
+      "value": 182736
+    },
+    {
+      "key": "c3",
+      "value": 564738
+    },
+    {
+      "key": "d4",
+      "value": 998877
+    },
+    {
+      "key": "e5",
+      "value": 123456
+    }
+  ],
+  "servers": [
+    {
+      "hostname": "alpha-node",
+      "ip": "192.168.1.10",
+      "ports": [
+        22,
+        80,
+        443,
+        8080
+      ],
+      "services": [
+        {
+          "name": "nginx",
+          "running": true,
+          "uptime_hours": 912
+        },
+        {
+          "name": "postgres",
+          "running": true,
+          "uptime_hours": 877
+        },
+        {
+          "name": "redis",
+          "running": false,
+          "uptime_hours": 0
+        }
+      ]
+    },
+    {
+      "hostname": "beta-node",
+      "ip": "10.0.0.4",
+      "ports": [
+        21,
+        25,
+        3306
+      ],
+      "services": [
+        {
+          "name": "mysql",
+          "running": true,
+          "uptime_hours": 150
+        },
+        {
+          "name": "ftp",
+          "running": false,
+          "uptime_hours": 0
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "editor": {
+      "autosave": true,
+      "font_family": "JetBrains Mono",
+      "font_size": 14,
+      "line_numbers": true,
+      "tab_width": 4,
+      "vim_mode": true
+    },
+    "language": "en",
+    "notifications": {
+      "email": true,
+      "marketing": false,
+      "push": true,
+      "sms": false
+    },
+    "theme": "dark"
+  }
+}
