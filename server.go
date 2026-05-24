@@ -2,10 +2,12 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
-	"time"
+	"strconv"
+	// "time"
 )
 
 type Request struct {
@@ -96,7 +98,7 @@ func main() {
 	for {
 		conn, err := listener.Accept()
 		checkAndLogError(err)
-		err = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+		// err = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 		checkAndLogError(err)
 		Req := &Request{}
 		Data := []byte{}
@@ -105,8 +107,9 @@ func main() {
 		// TODO(saif) : find \r\n\r\n
 		// var lines []byte
 		// FOUND_CRLF := false
+		in := -1
+		headerLength := 0
 		for {
-			fmt.Println("hello")
 			chunk := make([]byte, 1024)
 			n, err := conn.Read(chunk)
 
@@ -124,16 +127,27 @@ func main() {
 				checkAndLogError(err)
 				break
 			}
+
+			ContentLength := Req.Headers["Content-Length"]
+			if ContentLength != "" {
+				ContentLengthInt, err := strconv.Atoi(ContentLength)
+				checkAndLogError(err)
+				if BytesRead-headerLength >= ContentLengthInt {
+					Req.Body = append(Req.Body, Data[in+len(TERMINATOR):]...)
+					fmt.Println("break beacause bytes read is greater than content length", BytesRead, headerLength, ContentLengthInt, n)
+					break
+				}
+			}
+
 			if bytes.Contains(Data, TERMINATOR) {
-				in := bytes.Index(Data, TERMINATOR)
+				in = bytes.Index(Data, TERMINATOR)
+				headerLength = len(Data[:in+len(TERMINATOR)])
+				fmt.Println("headerLength", headerLength+len(TERMINATOR))
 				err = ParseHeaders(Req, Data[:in+len(CRLF)])
-				for k, v := range Req.Headers {
-					fmt.Printf("key : %v\n", k)
-					fmt.Printf("value : %v\n", v)
-					// fmt.Printf("k %v, v %s\n", k, v)
+				if err != nil {
+					panic("error")
 				}
 				checkAndLogError(err)
-				break
 			}
 		}
 		err = PraseRequest(Req, Data)
@@ -144,11 +158,21 @@ func main() {
 			fmt.Println("path: ", v.Path)
 			fmt.Println("verion: ", v.Version)
 			fmt.Println("headers: ", v.Headers)
-			for k, m := range v.Headers {
-				fmt.Printf("key : %v\n", k)
-				fmt.Printf("value : %v\n", m)
-			}
+			// for k, m := range v.Headers {
+			// 	fmt.Printf("key : %v\n", k)
+			// 	fmt.Printf("value : %v\n", m)
+			// }
+			//
 			fmt.Println("body: ", string(v.Body))
+			fmt.Println("here: ")
+			jsonValues := make(map[string]interface{})
+			if err := json.Unmarshal(v.Body, &jsonValues); err != nil {
+				fmt.Println("error: ", err)
+			}
+			for k, v := range jsonValues {
+				fmt.Println("key: ", k)
+				fmt.Println("value: ", v)
+			}
 		}
 		conn.Close()
 	}
