@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"strconv"
 	"time"
 )
@@ -32,6 +33,14 @@ func PraseRequest(Req *Request, Data []byte) error {
 	return nil
 }
 
+func readFile(filename string) string {
+	file, err := os.Open(filename)
+	checkAndLogError(err)
+	defer file.Close()
+	bytes, err := io.ReadAll(file)
+	checkAndLogError(err)
+	return string(bytes)
+}
 func main() {
 	port := "42069"
 	listener, err := net.Listen("tcp", ":"+port)
@@ -47,12 +56,22 @@ func main() {
 		// conn.Close()
 	}
 }
-func SendResponse(conn net.Conn, status int, body string) {
+func SendResponse(conn net.Conn, status int, body string, headers ...map[string]string) {
 	statusText := map[int]string{200: "OK", 404: "Not Found", 500: "Internal Server Error"}
-	response := fmt.Sprintf(
-		"HTTP/1.1 %d %s\r\nContent-Length: %d\r\nConnection: close\r\n\r\n%s",
-		status, statusText[status], len(body), body,
+
+	newHeaders := ""
+	for _, header := range headers {
+		for k, v := range header {
+			newHeaders += fmt.Sprintf("%s: %s\r\n", k, v)
+		}
+	}
+	if newHeaders == "" {
+		newHeaders = "\r\n"
+	}
+	response := fmt.Sprintf("HTTP/1.1 %d %s\r\nContent-Length: %d\r\nConnection: close\r\n%s\r\n%s",
+		status, statusText[status], len(body), newHeaders, body,
 	)
+	fmt.Println("response : ", response)
 	conn.Write([]byte(response))
 }
 
@@ -94,6 +113,7 @@ func handleConnection(conn net.Conn, requests []*Request) {
 			}
 			colon := bytes.IndexByte(line, ':')
 
+			Data = Data[LineEndIndex+len(CRLF):]
 			if colon == -1 {
 				continue
 			}
@@ -102,16 +122,14 @@ func handleConnection(conn net.Conn, requests []*Request) {
 			value := bytes.TrimSpace(line[colon+1:])
 
 			Req.Headers[string(key)] = string(value)
-
-			// fmt.Println("key is ", string(key))
-			// fmt.Println("value is  ", string(value))
-
-			Data = Data[LineEndIndex+len(CRLF):]
 		}
 
 		fmt.Println("path :", Req.Path)
 		fmt.Println("verion:", Req.Version)
 		fmt.Println("method:", Req.Method)
+		for k, v := range Req.Headers {
+			fmt.Println(k + ": " + v)
+		}
 		return nil
 	}
 
@@ -119,21 +137,15 @@ func handleConnection(conn net.Conn, requests []*Request) {
 	Data := []byte{}
 	requests = append(requests, Req)
 	BytesRead := 0
-	// TODO(saif) : find \r\n\r\n
-	// var lines []byte
-	// FOUND_CRLF := false
 	in := -1
 	headerLength := 0
 	for {
 		chunk := make([]byte, 1024)
 		n, err := conn.Read(chunk)
 
-		fmt.Println(n)
-
 		if n > 0 {
 			Data = append(Data, chunk[:n]...)
 			BytesRead += n
-			fmt.Println(string(Data))
 		}
 		if err != nil {
 			if err == io.EOF {
@@ -141,17 +153,6 @@ func handleConnection(conn net.Conn, requests []*Request) {
 			}
 			checkAndLogError(err)
 			break
-		}
-
-		ContentLength := Req.Headers["Content-Length"]
-		if ContentLength != "" {
-			ContentLengthInt, err := strconv.Atoi(ContentLength)
-			checkAndLogError(err)
-			if BytesRead-headerLength >= ContentLengthInt {
-				Req.Body = append(Req.Body, Data[in+len(TERMINATOR):]...)
-				fmt.Println("break beacause bytes read is greater than content length", BytesRead, headerLength, ContentLengthInt, n)
-				break
-			}
 		}
 
 		if bytes.Contains(Data, TERMINATOR) {
@@ -164,7 +165,50 @@ func handleConnection(conn net.Conn, requests []*Request) {
 			}
 			checkAndLogError(err)
 		}
+
+		ContentLength := Req.Headers["Content-Length"]
+		TransferEncoding := Req.Headers["Transfer-Encoding"]
+
+		if ContentLength == "" && TransferEncoding == "" {
+			fmt.Println("break beacause no content length or transfer encoding")
+			break
+		}
+
+		if ContentLength != "" {
+			ContentLengthInt, err := strconv.Atoi(ContentLength)
+			checkAndLogError(err)
+			if BytesRead-headerLength >= ContentLengthInt {
+				Req.Body = append(Req.Body, Data[in+len(TERMINATOR):]...)
+				fmt.Println("break beacause bytes read is greater than content length", BytesRead, headerLength, ContentLengthInt, n)
+				break
+			}
+		}
 	}
-	SendResponse(conn, 200, "Hello World")
+	switch Req.Path {
+	case "/":
+		SendResponse(conn, 200, "Hello World")
+	case "/use-neovim-btw":
+		fmt.Println("len : ", len([]byte("I use neovim-btw")))
+		SendResponse(conn, 200, "I use neovim-btw")
+	case "/home":
+		data := `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title></title>
+    <link href="css/style.css" rel="stylesheet">
+  </head>
+  <body style="background-color: red;">
+    hello world from saif
+  </body>
+</html>
+`
+		SendResponse(conn, 200, data, map[string]string{"Content-Type": "text/html"})
+	case "/index":
+		SendResponse(conn, 200, readFile("index.html"), map[string]string{"Content-Type": "text/html"})
+	case "/json":
+		SendResponse(conn, 200, string(Req.Body), map[string]string{"Content-Type": " application/json"})
+	}
 	conn.Close()
 }

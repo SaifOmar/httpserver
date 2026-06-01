@@ -1,6 +1,6 @@
 ### 
 
-POST http://localhost:42069/use-neovim-btw HTTP/1.1
+POST http://localhost:42069/json HTTP/1.1
 
 {
   "feature_flags": {
@@ -244,3 +244,24 @@ POST http://localhost:42069/use-neovim-btw HTTP/1.1
     "theme": "dark"
   }
 }
+
+
+### 
+
+GET http://localhost:42069/json HTTP/1.1
+
+{
+  "feature_flags": {
+    "beta_editor": false
+  }
+}
+
+
+### 
+
+GET http://localhost:42069/use-neovim-btw HTTP/1.1
+
+
+### 
+
+GET http://localhost:42069/home HTTP/1.1
